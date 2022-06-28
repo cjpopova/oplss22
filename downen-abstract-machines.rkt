@@ -29,6 +29,10 @@
 (define tni dni)
 (define tne (term (contra || (dni · α))))
 
+#;(define lem (mech-compile
+  (\mu \alpha (Left (\ x (\mu \beta
+    ((Right x) || \alpha)) || \alpha)))))
+
 ; todo: probably want to generate new gensyms everytime you invoke
 ; the utility functions. unless you figure out capture-avoiding substitution
 
@@ -43,9 +47,8 @@
 
 ; ====
 
-(define M (term (lam h_2 (μ β_1 (h_2 || (False · β_1))))))
+(define M (term (lam h_2 (μ β (h_2 || (False · β))))))
 (define DNE (term (lam h_1 (μ γ (h_1 || ((lam x (μ β (x || γ))) · casebrack))))))
-
 
 #;(traces -> (term (,DNE || (,M · α))))
 

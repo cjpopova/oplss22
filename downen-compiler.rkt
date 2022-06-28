@@ -13,7 +13,10 @@
   (v ::= x (lam x v) True False (μ α c))
   (E ::= α (v · E) (ifthen c_1 else c_2) casebrack)
   (c ::= (v || E))
-  (x y z f g h α β γ ::= variable-not-otherwise-mentioned))
+  (x y z f g h α β γ ::= variable-not-otherwise-mentioned)
+  #:binding-forms
+  (lam x v #:refers-to x)
+  (μ α c #:refers-to α))
 
 (define (mech-compile e)
   (match e
@@ -28,12 +31,10 @@
      (term (lam ,x ,(mech-compile M)))]
     ; app
     [`(,M ,N)
-     (define α (gensym 'α_))
-     (term (μ ,α (,(mech-compile M) || (,(mech-compile N) · ,α))))]
+     (term (μ α (,(mech-compile M) || (,(mech-compile N) · α))))]
     ; ite
     [`(if ,M ,N1 ,N2)
-     (define α (gensym 'α_))
-     (term (μ ,α (,(mech-compile M) (ifthen [,(mech-compile N1) ,α] else [,(mech-compile N2) ,α]))))]
+     (term (μ α (,(mech-compile M) (ifthen [,(mech-compile N1) α] else [,(mech-compile N2) α]))))]
     [_ (error 'mech-compile "unrecognized expr ~a" e)]))
 
 #|(mech-compile `True)
