@@ -1,13 +1,6 @@
 #lang racket
-(require redex)
-
-(define-language mech
-  (v ::= x (lam x v) True False (μ α c))
-  (E ::= α (v · E) (ifthen c_1 else c_2) casebrack)
-  (c ::= (v || E))
-  (x y z h α β γ ::= variable-not-otherwise-mentioned))
-
-(default-language mech)
+(require redex
+         "downen-compiler.rkt")
 
 (define ->
   (reduction-relation
@@ -25,46 +18,35 @@
         c_2
         β-bool-2]))
 
-#;(apply-reduction-relation* -> (term (False || α)))
-#;(redex-match? mech c
-                (term ((lam x (μ α (x || (ifthen (False || α) else (True || α))))) || (True · α))))
+(define notλ (term (lam x (μ α (x || (ifthen (False || α) else (True || α)))))))
+(define andλ (term (lam x
+                        (lam y
+                             (μ α (x || (ifthen (y || α) else (False || α))))))))
+(define contra (mech-compile
+                `(λ f (λ g (λ x (g (f x)))))))
+(define dni (mech-compile
+             `(λ x (λ y (y x)))))
+(define tni dni)
+(define tne (term (contra || (dni · α))))
+
+; todo: probably want to generate new gensyms everytime you invoke
+; the utility functions. unless you figure out capture-avoiding substitution
+
+; (not True) ->* False
 #;(traces -> (term ((lam x
                          (μ α (x
                                || (ifthen (False || α) else (True || α)))))
                     || (True · α))))
+; (and True True) ->* True
+#;(traces -> (term (,andλ || (True · (True · α)))))
+
+
+; ====
+
 (define M (term (lam h_2 (μ β_1 (h_2 || (False · β_1))))))
 (define DNE (term (lam h_1 (μ γ (h_1 || ((lam x (μ β (x || γ))) · casebrack))))))
 
-(traces -> (term (,DNE || (,M · α))))
 
-; ===============================
-
-; E (or κ) ::= (app N E) | (ite [N1 E] [N2 E])
-
-(define (mch-compile e)
-  (match e
-    ; var
-    [(? symbol? x)
-     x]
-    ; flat
-    [(? boolean? b)
-     b]
-    ; abs
-    [`(λ ,x ,M)
-     `(λ ,x ,(mch-compile M))]
-    ; app
-    [`(,M ,N)
-     `(μα [,(mch-compile M) (app ,(mch-compile N) α)])] ; do we need to mch-compile N here??
-    ; ite
-    [`(if ,M ,N1 ,N2)
-     `(μα [,(mch-compile M) (ite [,(mch-compile N1) α] [,(mch-compile N2) α])])]
-    [_ (error 'mch-compiler "unrecognized expr ~a" e)]))
-
-#|(mch-compile true)
-(mch-compile `(λ x true))
-(mch-compile `((λ x x) false))
-(mch-compile `(((λ x (λ y (if x y false))) false) false))|#
-
-
+#;(traces -> (term (,DNE || (,M · α))))
 
 
